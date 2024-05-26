@@ -42,6 +42,10 @@ if (mobile == True) {
     }
 }
 
+// Launching XMRIG
 
+// Renaming the XMRIG process
+
+// 
 
 

@@ -55,12 +55,5 @@ async function checkForHardwareSupport() {
 }
 
 checkForHardwareSupport();
-<<<<<<< Updated upstream
-
-
-
-
-=======
->>>>>>> Stashed changes
 
 

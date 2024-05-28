@@ -7,6 +7,15 @@ It runs in the background; at the moment, it is easily detectable.
 > THIS PROJECT IS MALWARE! Only run this in an isolated environment where it can be controlled.
 > I am not responsible for thermal-related damage caused to a system by careless mining or any such repercussions that result from running this program.
 
+## Files in the repository
+
++ `README.md`: This file
++ `main.js`: JavaScript backend to hide miner activity and divert user attention
++ `SHA256SUMS`: List of SHA256 hashes to identify legitimacy of the miner
++ `WinRing0x64.sys`: Kernel driver and hardware access library
++ `miner.exe`: The actual XMRig miner
++ `config.json`: XMRig configuration for OpenCL, mining pool addresses, CPU features, and more
+
 ## Future plans
 
 - [ ] Weed out bugs related to process exiting when checking for the number of physical cores on a CPU

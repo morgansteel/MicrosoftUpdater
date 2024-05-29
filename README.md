@@ -12,7 +12,10 @@ A JavaScript cryptojacker (or simply "miner") that pretends to guide the user th
     + In some cases where adding it as a service does not work, it's added to Task Scheduler with `schtasks` and then initiated with `net start`
     + This service is registered as "Windows Process Manager"
 + Task Manager is disabled to divert inexperienced users from investigating
-    + This is done by creating a new entry `DisableTaskMgr` in `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\` and setting `DisableTaskMgr` to `1`.
+    + This is done by creating a new `REG_DWORD` named `DisableTaskMgr` in `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\` and setting `DisableTaskMgr` to `1`.
+
+> [!NOTE]
+> A reboot occurs for many registry changes to take effect.
 
 ## Files in the repository
 

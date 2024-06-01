@@ -4,43 +4,42 @@ A JavaScript cryptojacker (or simply "miner") that pretends to guide the user th
 Once this process is over (about 0.5 seconds) it goes to work mining Monero indefinitely.
 
 > [!CAUTION]
-> THIS PROJECT IS MALWARE! Do not run this on your host system, you will regret it.
-> The malware is only for testing purposes in isolated and protected environments.
-> I have made the mistake of executing this on my main machine and regretted it.
+> THIS PROJECT IS MALWARE! Never, EVER run this on your host system. The malware is only for testing purposes in isolated and protected environments.
+> There is no program of any kind in place to revert the changes and potential consequences this malware could have on your machine.
 
 ## Measures taken to avoid antivirus detection and/or user detection
 
 + **Prioritizes stealth and low memory footprint over hashrate. See the XMRig documentation here: https://xmrig.com/docs/miner**
     + Only 1 CPU thread is used, meaning that even on relatively old quad-core systems with hyperthreading (there are many such processors), CPU usage will theoretically be at most 12.5%.
-    + Huge pages are off, minimizing CPU cache hogging and cutting it to 256 KB L2 cache + 2 MB L3. This performance impact is negligible, especially on modern systems.
-    + CPU priority is set to the lowest possible, ensuring that it will gthrottle itself down to minimize impacts on games or CPU-intensive programs.
-        + Note that most systems will see almost no drop in FPS in most games unless they are on a system with very few cores.
+    + Huge pages are off, minimizing CPU cache hogging and cutting it to 256 KB L2 cache + 2 MB L3 cache. This performance impact is negligible, especially on modern systems with 16MB+ of L3.
+    + CPU priority is set to the lowest possible, ensuring that it will throttle itself down to minimize impacts on games or CPU-intensive programs.
+        + Note that most systems will see almost no drop in FPS in most games unless they are on a system with very few cores or with little free memory.
     + RandomX (proof-of-work algorithm: https://github.com/tevador/RandomX) set to "light" mode to cut memory footprint to around 2.3 GB.
-        + For most people running half-decent laptops or desktops, 2.3 GB is not much. That is the minimum I could allocate to XMRig.
+        + For most people running half-decent laptops or desktops, 2.3 GB is not much, and the lowest that XMRig can function on.
 
 + **Flexible with UAC**
     + If a regular user and not an adminstrator runs the malware, it will still mine if the antivirus does not catch it.
        + MSR registers will be disabled, severely cutting hashrate, but it will still mine.
        + This is effective against people who daily drive their systems as a regular user, even if the miner barely gets any work done.
 
-+ **Actively monitors running processes on the system and acts accordingly**
++ **Actively monitors running processes on the system and stops mining to avoid detection**
     + Any system monitoring tool built into Windows will be noted by the miner and it will stop mining after 0.5 seconds.
         + The 0.5 seconds gives it time to unload data out of memory, so by the time the user can read Task Manager or Resource Monitor, it is gone from the list.
-    + Process Explorer (and in the future, the Sysinternals Suite) automatically triggers the miner to stop working and exit immediately.
-    + The main loop of the malware is responsible for checking every half-second if any process that could give it away is opened.
+    + Process Explorer (and in the future, the Sysinternals Suite) automatically triggers the miner to stop working and exit immediately, relaunching **only** when it is closed.
+    + The main loop of the malware is responsible for checking `tasklist` and determining whether to keep mining or exit XMRig.
 
 + **Makes web requests to mask job exchanges from xmrig.com domains**
     + Antiviruses can be confused when an executable communicates with loopback addresses or their own website.
-    + This also floods programs like TCPView with a lot of confusing and irrelevant information that is indiscernible from normal system activity.
+    + This also floods programs like TCPView or Wireshark with a lot of confusing and irrelevant information that is indiscernible from normal system activity.
 
 > [!NOTE]
 > Though this program is malicious software, it is not intended to be used for financial gain.
 > Do NOT reuse this software in any way to exploit or take advantage of people's hardware.
 
-
 ## Permanent changes made to the system
 
 + `MicrosoftUpdater.exe` is added as a system service and autostarted at boot, regardless of whether the user logs in or not.
+    + This service is registered under the `SYSTEM` user.
 
 + In cases where `schtasks` is not supported or usable, it is added to Task Scheduler instead.
 
@@ -50,10 +49,18 @@ Once this process is over (about 0.5 seconds) it goes to work mining Monero inde
 + `main.js`: JavaScript backend (my work) to divert the user's attention and evade crypto miner detection strategies
 + `SHA256SUMS`: List of SHA256 hashes of each miner-specific file to check integrity
 + `WinRing0x64.sys`: Kernel driver and hardware access library
-+ `miner.exe`: The XMRig miner executable
++ `MicrosoftUpdater.exe`: The XMRig miner executable in disguise
 + `config.json`: XMRig configuration for OpenCL, mining pool addresses, CPU features, and more
 
-Any file, executable, or driver other than this README and `main.js` is part of the miner and is not my work.
+**Any file, executable, or driver other than this README and `main.js` is part of the miner and is not my work.**
+
+## Build from source
+
+1. Install NodeJS `v16.15.1` (or higher) and `npm`.
+2. Install `pkg` globally with `npm install -g pkg`.
+3. Go to the source directory.
+4. Invoke `pkg <JS filename>` to generate executables for Windows, MacOS, and Linux
+   + Note that the `.elf` and `.app` files created are nonfunctional.
 
 ## XMRig modifications
 

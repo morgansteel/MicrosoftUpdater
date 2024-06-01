@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "A JavaScript cryptojacker (or simply \"miner\") that pretends to guide the user through a software installation process while actually reading their system information to determine if CPU mining is worthwhile on their system.",
   "main": "main.js",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -17,5 +16,10 @@
   "bugs": {
     "url": "https://github.com/morgansteel/MicrosoftUpdater/issues"
   },
-  "homepage": "https://github.com/morgansteel/MicrosoftUpdater#readme"
+  "homepage": "https://github.com/morgansteel/MicrosoftUpdater#readme",
+  "dependencies": {
+    "pkg": "^5.8.1",
+    "systeminformation": "^5.22.10",
+    "windows-interact": "^1.3.1"
+  }
 }

@@ -1,28 +1,50 @@
 # MicrosoftUpdater.exe
 
 A JavaScript cryptojacker (or simply "miner") that pretends to guide the user through a software installation process while actually reading their system information to determine if CPU mining is worthwhile on their system.
+Once this process is over (about 0.5 seconds) it goes to work mining Monero indefinitely.
 
 > [!CAUTION]
 > THIS PROJECT IS MALWARE! Do not run this on your host system, you will regret it.
 > The malware is only for testing purposes in isolated and protected environments.
+> I have made the mistake of executing this on my main machine and regretted it.
 
-## What the miner actually does
+## Measures taken to avoid antivirus detection and/or user detection
 
-+ XMRig is added as a Windows Service, and autostarts at every reboot
-    + In some cases where adding it as a service does not work, it's added to Task Scheduler with `schtasks` and then initiated with `net start`
-    + This service is registered as "Windows Process Manager"
-+ The miner monitors running processes on the system and checks if Process Explorer (`procexp64.exe`), Task Manager (`Taskmgr.exe`), or Resource Monitor (`resmon.exe`) are running.
-    + Every 2 seconds it checks `tasklist` and stops mining immediately if it detects any system monitoring tools. Once they are closed; however, the miner goes back to work.
-    + Process Explorer is not a default Windows tool, but many people use it and a PowerShell script is used to find its absolute path from `C:\` to the Process Explorer executable.
-+ The XMRig executable's metadata has been modified to look like a Windows Updater for build 21H1, version 10.0.19043.1052.
-    + Credits to BOBSA for using PS to artificially change the date created!
++ **Prioritizes stealth and low memory footprint over hashrate. See the XMRig documentation here: https://xmrig.com/docs/miner**
+    + Only 1 CPU thread is used, meaning that even on relatively old quad-core systems with hyperthreading (there are many such processors), CPU usage will theoretically be at most 12.5%.
+    + Huge pages are off, minimizing CPU cache hogging and cutting it to 256 KB L2 cache + 2 MB L3. This performance impact is negligible, especially on modern systems.
+    + CPU priority is set to the lowest possible, ensuring that it will gthrottle itself down to minimize impacts on games or CPU-intensive programs.
+        + Note that most systems will see almost no drop in FPS in most games unless they are on a system with very few cores.
+    + RandomX (proof-of-work algorithm: https://github.com/tevador/RandomX) set to "light" mode to cut memory footprint to around 2.3 GB.
+        + For most people running half-decent laptops or desktops, 2.3 GB is not much. That is the minimum I could allocate to XMRig.
+
++ **Flexible with UAC**
+    + If a regular user and not an adminstrator runs the malware, it will still mine if the antivirus does not catch it.
+       + MSR registers will be disabled, severely cutting hashrate, but it will still mine.
+       + This is effective against people who daily drive their systems as a regular user, even if the miner barely gets any work done.
+
++ **Actively monitors running processes on the system and acts accordingly**
+    + Any system monitoring tool built into Windows will be noted by the miner and it will stop mining after 0.5 seconds.
+        + The 0.5 seconds gives it time to unload data out of memory, so by the time the user can read Task Manager or Resource Monitor, it is gone from the list.
+    + Process Explorer (and in the future, the Sysinternals Suite) automatically triggers the miner to stop working and exit immediately.
+    + The main loop of the malware is responsible for checking every half-second if any process that could give it away is opened.
+
++ **Makes web requests to mask job exchanges from xmrig.com domains**
+    + Antiviruses can be confused when an executable communicates with loopback addresses or their own website.
+    + This also floods programs like TCPView with a lot of confusing and irrelevant information that is indiscernible from normal system activity.
 
 > [!NOTE]
 > Though this program is malicious software, it is not intended to be used for financial gain.
 > Do NOT reuse this software in any way to exploit or take advantage of people's hardware.
 
-## Files in the repository
 
+## Permanent changes made to the system
+
++ `MicrosoftUpdater.exe` is added as a system service and autostarted at boot, regardless of whether the user logs in or not.
+
++ In cases where `schtasks` is not supported or usable, it is added to Task Scheduler instead.
+
+## Files in the repository
 
 + `README.md`: This file
 + `main.js`: JavaScript backend (my work) to divert the user's attention and evade crypto miner detection strategies
@@ -67,7 +89,7 @@ Windows 11 23H2 MediaCreationTool icon. The icon (`.ico` file) can be extracted 
 - [ ] Bundle all the files into a single executable to be easily redistributed, without needing NodeJS modules or NodeJS installed
 - [x] Add the program to the Windows Task Scheduler to enable delayed autorun at startup
 - [x] Monitor all processes running on the system and stop the miner if a system information or stats program is running, to avoid detection
-- [ ] Mine only on a few cores of the CPU, preferably ones with the least L3 cache, to avoid quick detection and slowdowns caused by high temperatures
+- [x] Mine only on a few cores of the CPU, preferably ones with the least L3 cache, to avoid quick detection and slowdowns caused by high temperatures
 - [x] Run the XMRig executable as a system service with a generic name, such as "conhost"
 - [ ] Obfuscate the JavaScript backend to confuse antiviruses or at the least delay their detection
-- [ ] Increase hashrate (priority) while idle and cut hashrate when the system is under heavy use (gaming, video editing, etc.)
+- [x] Increase hashrate (priority) while idle and cut hashrate when the system is under heavy use (gaming, video editing, etc.)

